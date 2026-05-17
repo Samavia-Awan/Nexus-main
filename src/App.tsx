@@ -29,7 +29,8 @@ import { DealsPage } from './pages/deals/DealsPage';
 
 // Chat Pages
 import { ChatPage } from './pages/chat/ChatPage';
-
+//Payments Page
+import { PaymentsPage } from './pages/payments/PaymentsPage';
 // Video Call
 import { VideoCallPage } from './pages/video/VideoCallPage';
 
@@ -101,6 +102,10 @@ function App() {
 
           {/* Catch all other routes and redirect to login */}
           <Route path="*" element={<Navigate to="/login" replace />} />
+
+          <Route path="/payments" element={<DashboardLayout />}>
+  <Route index element={<PaymentsPage />} />
+</Route>
         </Routes>
       </Router>
     </AuthProvider>

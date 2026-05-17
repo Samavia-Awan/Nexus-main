@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
   Home, Building2, CircleDollarSign, Users, MessageCircle, 
-  Bell, FileText, Settings, HelpCircle
+  Bell, FileText, Settings, HelpCircle, DollarSign, Video
 } from 'lucide-react';
 
 interface SidebarItemProps {
@@ -35,7 +35,6 @@ export const Sidebar: React.FC = () => {
   
   if (!user) return null;
   
-  // Define sidebar items based on user role
   const entrepreneurItems = [
     { to: '/dashboard/entrepreneur', icon: <Home size={20} />, text: 'Dashboard' },
     { to: '/profile/entrepreneur/' + user.id, icon: <Building2 size={20} />, text: 'My Startup' },
@@ -43,6 +42,8 @@ export const Sidebar: React.FC = () => {
     { to: '/messages', icon: <MessageCircle size={20} />, text: 'Messages' },
     { to: '/notifications', icon: <Bell size={20} />, text: 'Notifications' },
     { to: '/documents', icon: <FileText size={20} />, text: 'Documents' },
+    { to: '/payments', icon: <DollarSign size={20} />, text: 'Payments' },
+    { to: '/video/my-room', icon: <Video size={20} />, text: 'Video Call' },
   ];
   
   const investorItems = [
@@ -52,11 +53,12 @@ export const Sidebar: React.FC = () => {
     { to: '/messages', icon: <MessageCircle size={20} />, text: 'Messages' },
     { to: '/notifications', icon: <Bell size={20} />, text: 'Notifications' },
     { to: '/deals', icon: <FileText size={20} />, text: 'Deals' },
+    { to: '/payments', icon: <DollarSign size={20} />, text: 'Payments' },
+    { to: '/video/my-room', icon: <Video size={20} />, text: 'Video Call' },
   ];
   
   const sidebarItems = user.role === 'entrepreneur' ? entrepreneurItems : investorItems;
   
-  // Common items at the bottom
   const commonItems = [
     { to: '/settings', icon: <Settings size={20} />, text: 'Settings' },
     { to: '/help', icon: <HelpCircle size={20} />, text: 'Help & Support' },
