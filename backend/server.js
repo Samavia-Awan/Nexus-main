@@ -20,7 +20,9 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/meetings', require('./routes/meetings'));
-
+app.use('/api/documents', require('./routes/documents'));
+app.use('/uploads', express.static('uploads'));
+app.use('/api/otp', require('./routes/otp'));
 // Test route
 app.get('/', (req, res) => {
   res.json({ message: 'Nexus backend is running!' });
@@ -30,14 +32,12 @@ app.get('/', (req, res) => {
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  // Join a room
   socket.on('join-room', (roomId, userId) => {
     socket.join(roomId);
     socket.to(roomId).emit('user-connected', userId);
     console.log(`User ${userId} joined room ${roomId}`);
   });
 
-  // Handle WebRTC signaling
   socket.on('offer', (offer, roomId) => {
     socket.to(roomId).emit('offer', offer);
   });
@@ -50,7 +50,6 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('ice-candidate', candidate);
   });
 
-  // Toggle audio/video
   socket.on('toggle-audio', (roomId, enabled) => {
     socket.to(roomId).emit('user-toggle-audio', socket.id, enabled);
   });
@@ -59,7 +58,6 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('user-toggle-video', socket.id, enabled);
   });
 
-  // Leave room
   socket.on('leave-room', (roomId) => {
     socket.to(roomId).emit('user-disconnected', socket.id);
     socket.leave(roomId);
