@@ -1,0 +1,25 @@
+### Login
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "Samavia@test.com",
+  "password": "123456"
+}
+
+### Schedule Meeting
+POST http://localhost:5000/api/meetings
+Content-Type: application/json
+Authorization: Bearer PASTE_TOKEN_HERE
+
+{
+  "title": "Test Meeting",
+  "description": "Test description",
+  "date": "2026-05-25",
+  "startTime": "10:00",
+  "endTime": "11:00"
+}
+
+### Get Meetings
+GET http://localhost:5000/api/meetings
+Authorization: Bearer PASTE_TOKEN_HERE

@@ -26,11 +26,14 @@ import { DocumentsPage } from './pages/documents/DocumentsPage';
 import { SettingsPage } from './pages/settings/SettingsPage';
 import { HelpPage } from './pages/help/HelpPage';
 import { DealsPage } from './pages/deals/DealsPage';
+import { MeetingsPage } from './pages/meetings/MeetingsPage';
 
 // Chat Pages
 import { ChatPage } from './pages/chat/ChatPage';
-//Payments Page
+
+// Payments Page
 import { PaymentsPage } from './pages/payments/PaymentsPage';
+
 // Video Call
 import { VideoCallPage } from './pages/video/VideoCallPage';
 
@@ -88,6 +91,14 @@ function App() {
             <Route index element={<DealsPage />} />
           </Route>
 
+          <Route path="/payments" element={<DashboardLayout />}>
+            <Route index element={<PaymentsPage />} />
+          </Route>
+
+          <Route path="/meetings" element={<DashboardLayout />}>
+            <Route index element={<MeetingsPage />} />
+          </Route>
+
           {/* Chat Routes */}
           <Route path="/chat" element={<DashboardLayout />}>
             <Route index element={<ChatPage />} />
@@ -102,10 +113,6 @@ function App() {
 
           {/* Catch all other routes and redirect to login */}
           <Route path="*" element={<Navigate to="/login" replace />} />
-
-          <Route path="/payments" element={<DashboardLayout />}>
-  <Route index element={<PaymentsPage />} />
-</Route>
         </Routes>
       </Router>
     </AuthProvider>

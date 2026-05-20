@@ -149,3 +149,11 @@ export const paymentAPI = {
     return response.json();
   },
 };
+export const usersAPI = {
+  getByRole: async (token: string, role: string) => {
+    const response = await fetch(`${API_URL}/auth/users/${role}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return response.json();
+  },
+};

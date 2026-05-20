@@ -1,39 +1,29 @@
 const Meeting = require('../models/Meeting');
-
 exports.scheduleMeeting = async (req, res) => {
   try {
     const { title, description, participant, date, startTime, endTime } = req.body;
 
-    const conflict = await Meeting.findOne({
-      participant,
-      date,
-      status: { $ne: 'cancelled' },
-      $or: [
-        { startTime: { $lt: endTime }, endTime: { $gt: startTime } }
-      ]
-    });
-
-    if (conflict) {
-      return res.status(400).json({ message: 'Time slot already booked' });
-    }
-
-    const meeting = new Meeting({
+    const meetingData = {
       title,
       description,
       organizer: req.user.id,
-      participant,
       date,
       startTime,
       endTime
-    });
+    };
 
+    if (participant && participant.trim() !== '') {
+      meetingData.participant = participant;
+    }
+
+    const meeting = new Meeting(meetingData);
     await meeting.save();
     res.status(201).json(meeting);
   } catch (err) {
+    console.log('MEETING ERROR:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
-
 exports.getMeetings = async (req, res) => {
   try {
     const meetings = await Meeting.find({
