@@ -24,6 +24,7 @@ app.use('/api/documents', require('./routes/documents'));
 app.use('/uploads', express.static('uploads'));
 app.use('/api/otp', require('./routes/otp'));
 app.use('/api/payments', require('./routes/payments'));
+app.use('/api/collaboration', require('./routes/collaboration'));
 // Test route
 app.get('/', (req, res) => {
   res.json({ message: 'Nexus backend is running!' });

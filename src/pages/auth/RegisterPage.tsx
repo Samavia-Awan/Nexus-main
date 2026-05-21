@@ -14,32 +14,50 @@ export const RegisterPage: React.FC = () => {
   const [role, setRole] = useState<UserRole>('entrepreneur');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
   const { register } = useAuth();
   const navigate = useNavigate();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+
+    const trimmedName = name.trim();
+
+    // Name must be at least 2 characters
+    if (trimmedName.length < 2) {
+      setError('Please enter your full name (at least 2 characters).');
+      return;
+    }
+
+    // Name must contain only letters and spaces — no numbers or symbols
+    if (!/^[A-Za-z\s]+$/.test(trimmedName)) {
+      setError('Name must contain only letters (no numbers or symbols).');
+      return;
+    }
+
+    // Reject obvious junk names
+    const junkNames = ['abc', 'xyz', 'test', 'asdf', 'qwerty', 'name', 'user'];
+    if (junkNames.includes(trimmedName.toLowerCase())) {
+      setError('Please enter your real name.');
+      return;
+    }
+
     // Validate passwords match
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     try {
-      await register(name, email, password, role);
-      // Redirect based on user role
+      await register(trimmedName, email, password, role);
       navigate(role === 'entrepreneur' ? '/dashboard/entrepreneur' : '/dashboard/investor');
     } catch (err) {
       setError((err as Error).message);
       setIsLoading(false);
     }
   };
-  
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">

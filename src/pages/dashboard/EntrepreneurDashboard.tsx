@@ -4,18 +4,15 @@ import { Users, Bell, Calendar, TrendingUp, AlertCircle, PlusCircle, Clock, User
 import { Button } from '../../components/ui/Button';
 import { Card, CardBody, CardHeader } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
-import { CollaborationRequestCard } from '../../components/collaboration/CollaborationRequestCard';
 import { InvestorCard } from '../../components/investor/InvestorCard';
 import { useAuth } from '../../context/AuthContext';
-import { CollaborationRequest } from '../../types';
-import { getRequestsForEntrepreneur } from '../../data/collaborationRequests';
 import { investors } from '../../data/users';
 
 export const EntrepreneurDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [collaborationRequests, setCollaborationRequests] = useState<CollaborationRequest[]>([]);
   const [recommendedInvestors] = useState(investors.slice(0, 3));
   const [meetings, setMeetings] = useState<any[]>([]);
+  const [collaborations, setCollaborations] = useState<any[]>([]);
   const [meetingLoading, setMeetingLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
@@ -26,54 +23,84 @@ export const EntrepreneurDashboard: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      const requests = getRequestsForEntrepreneur(user.id);
-      setCollaborationRequests(requests);
       fetchMeetings();
+      fetchCollaborations();
     }
   }, [user]);
 
+  const getToken = () => localStorage.getItem('business_nexus_token') || '';
+
   const fetchMeetings = async () => {
-    const token = localStorage.getItem('business_nexus_token') || '';
     try {
-      const response = await fetch('http://localhost:5000/api/meetings', {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const res = await fetch('http://localhost:5000/api/meetings', {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
       });
-      const data = await response.json();
-      console.log('Fetched meetings:', data);
+      const data = await res.json();
       setMeetings(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching meetings:', err);
     }
   };
 
-  const handleSchedule = async () => {
-    const token = localStorage.getItem('business_nexus_token') || '';
-    if (!title || !date || !startTime || !endTime) {
-      alert('Please fill in title, date, start time and end time!');
-      return;
+  const fetchCollaborations = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/collaboration', {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      const data = await res.json();
+      setCollaborations(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error fetching collaborations:', err);
     }
-    if (!token) {
-      alert('You are not logged in!');
+  };
+
+  const handleAcceptCollab = async (id: string) => {
+    try {
+      await fetch(`http://localhost:5000/api/collaboration/${id}/accept`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      await fetchCollaborations();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleRejectCollab = async (id: string) => {
+    try {
+      await fetch(`http://localhost:5000/api/collaboration/${id}/reject`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      await fetchCollaborations();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSchedule = async () => {
+    if (!title || !date || !startTime || !endTime) {
+      alert('Please fill in all required fields!');
       return;
     }
     setMeetingLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/meetings', {
+      const res = await fetch('http://localhost:5000/api/meetings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${getToken()}`
         },
         body: JSON.stringify({ title, description, date, startTime, endTime })
       });
-      const data = await response.json();
+      const data = await res.json();
       if (data._id) {
         alert('Meeting scheduled successfully!');
         setShowForm(false);
         setTitle(''); setDescription(''); setDate(''); setStartTime(''); setEndTime('');
         await fetchMeetings();
       } else {
-        alert('Error: ' + (data.message || 'Failed to schedule meeting'));
+        alert('Error: ' + (data.message || 'Failed'));
       }
     } catch (err) {
       alert('Failed to schedule meeting!');
@@ -82,52 +109,40 @@ export const EntrepreneurDashboard: React.FC = () => {
     }
   };
 
-  const handleAccept = async (id: string) => {
-    const token = localStorage.getItem('business_nexus_token') || '';
+  const handleAcceptMeeting = async (id: string) => {
     try {
       await fetch(`http://localhost:5000/api/meetings/${id}/accept`, {
         method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${getToken()}` }
       });
       await fetchMeetings();
-    } catch (err) {
-      console.error('Error accepting meeting:', err);
-    }
+    } catch (err) { console.error(err); }
   };
 
-  const handleReject = async (id: string) => {
-    const token = localStorage.getItem('business_nexus_token') || '';
+  const handleRejectMeeting = async (id: string) => {
     try {
       await fetch(`http://localhost:5000/api/meetings/${id}/reject`, {
         method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${getToken()}` }
       });
       await fetchMeetings();
-    } catch (err) {
-      console.error('Error rejecting meeting:', err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'accepted': return 'text-green-600 bg-green-50';
       case 'rejected': return 'text-red-600 bg-red-50';
-      case 'cancelled': return 'text-gray-600 bg-gray-50';
       default: return 'text-yellow-600 bg-yellow-50';
     }
   };
 
-  const handleRequestStatusUpdate = (requestId: string, status: 'accepted' | 'rejected') => {
-    setCollaborationRequests(prev =>
-      prev.map(req => req.id === requestId ? { ...req, status } : req)
-    );
-  };
-
   if (!user) return null;
 
-  const pendingRequests = collaborationRequests.filter(req => req.status === 'pending');
-  const acceptedMeetings = meetings.filter(m => m.status === 'accepted');
+  const pendingCollabs = collaborations.filter(c => c.status === 'pending');
+  const acceptedCollabs = collaborations.filter(c => c.status === 'accepted');
   const pendingMeetings = meetings.filter(m => m.status === 'pending');
+  const acceptedMeetings = meetings.filter(m => m.status === 'accepted');
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -142,7 +157,7 @@ export const EntrepreneurDashboard: React.FC = () => {
         </Link>
       </div>
 
-      {/* Summary cards */}
+      {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
         <Card className="bg-primary-50 border border-primary-100">
           <CardBody>
@@ -152,7 +167,7 @@ export const EntrepreneurDashboard: React.FC = () => {
               </div>
               <div>
                 <p className="text-xs font-medium text-primary-700">Pending Requests</p>
-                <h3 className="text-xl font-semibold text-primary-900">{pendingRequests.length}</h3>
+                <h3 className="text-xl font-semibold text-primary-900">{pendingCollabs.length}</h3>
               </div>
             </div>
           </CardBody>
@@ -166,9 +181,7 @@ export const EntrepreneurDashboard: React.FC = () => {
               </div>
               <div>
                 <p className="text-xs font-medium text-secondary-700">Total Connections</p>
-                <h3 className="text-xl font-semibold text-secondary-900">
-                  {collaborationRequests.filter(req => req.status === 'accepted').length}
-                </h3>
+                <h3 className="text-xl font-semibold text-secondary-900">{acceptedCollabs.length}</h3>
               </div>
             </div>
           </CardBody>
@@ -210,20 +223,10 @@ export const EntrepreneurDashboard: React.FC = () => {
           <Card>
             <CardHeader className="flex justify-between items-center">
               <h2 className="text-lg font-medium text-gray-900">Collaboration Requests</h2>
-              <Badge variant="primary">{pendingRequests.length} pending</Badge>
+              <Badge variant="primary">{pendingCollabs.length} pending</Badge>
             </CardHeader>
             <CardBody>
-              {collaborationRequests.length > 0 ? (
-                <div className="space-y-4">
-                  {collaborationRequests.map(request => (
-                    <CollaborationRequestCard
-                      key={request.id}
-                      request={request}
-                      onStatusUpdate={handleRequestStatusUpdate}
-                    />
-                  ))}
-                </div>
-              ) : (
+              {collaborations.length === 0 ? (
                 <div className="text-center py-8">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
                     <AlertCircle size={24} className="text-gray-500" />
@@ -231,11 +234,50 @@ export const EntrepreneurDashboard: React.FC = () => {
                   <p className="text-gray-600">No collaboration requests yet</p>
                   <p className="text-sm text-gray-500 mt-1">When investors are interested in your startup, their requests will appear here</p>
                 </div>
+              ) : (
+                <div className="space-y-4">
+                  {collaborations.map((collab: any) => (
+                    <div key={collab._id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-gray-900">
+                              {collab.investor?.name || 'Investor'}
+                            </p>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(collab.status)}`}>
+                              {collab.status}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600">{collab.message}</p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {new Date(collab.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        {collab.status === 'pending' && (
+                          <div className="flex flex-col gap-2 ml-3">
+                            <button
+                              onClick={() => handleAcceptCollab(collab._id)}
+                              className="flex items-center px-2 py-1 text-xs text-green-600 border border-green-600 rounded-md hover:bg-green-50"
+                            >
+                              <Check size={12} className="mr-1" /> Accept
+                            </button>
+                            <button
+                              onClick={() => handleRejectCollab(collab._id)}
+                              className="flex items-center px-2 py-1 text-xs text-red-600 border border-red-600 rounded-md hover:bg-red-50"
+                            >
+                              <X size={12} className="mr-1" /> Reject
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </CardBody>
           </Card>
 
-          {/* Meetings Section */}
+          {/* Meetings */}
           <Card>
             <CardHeader className="flex justify-between items-center">
               <h2 className="text-lg font-medium text-gray-900">
@@ -248,72 +290,46 @@ export const EntrepreneurDashboard: React.FC = () => {
                 {showForm ? 'Cancel' : 'Schedule Meeting'}
               </Button>
             </CardHeader>
-
             <CardBody className="space-y-4">
-              {/* Schedule Form */}
               {showForm && (
                 <div className="border border-gray-200 rounded-lg p-4 space-y-3 bg-gray-50">
                   <h3 className="text-sm font-semibold text-gray-800">Schedule New Meeting</h3>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-                    <input
-                      type="text"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
+                    <input type="text" value={title} onChange={e => setTitle(e.target.value)}
                       placeholder="Meeting title"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                    <input
-                      type="text"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
+                    <input type="text" value={description} onChange={e => setDescription(e.target.value)}
                       placeholder="Meeting description"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
-                    <input
-                      type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
+                    <input type="date" value={date} onChange={e => setDate(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Start Time *</label>
-                      <input
-                        type="time"
-                        value={startTime}
-                        onChange={(e) => setStartTime(e.target.value)}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      />
+                      <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">End Time *</label>
-                      <input
-                        type="time"
-                        value={endTime}
-                        onChange={(e) => setEndTime(e.target.value)}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      />
+                      <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                     </div>
                   </div>
-                  <button
-                    onClick={handleSchedule}
-                    disabled={meetingLoading}
-                    className="w-full bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 disabled:opacity-50 text-sm font-medium"
-                  >
+                  <button onClick={handleSchedule} disabled={meetingLoading}
+                    className="w-full bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 disabled:opacity-50 text-sm font-medium">
                     {meetingLoading ? 'Scheduling...' : 'Schedule Meeting'}
                   </button>
                 </div>
               )}
 
-              {/* Meetings List */}
               {meetings.length === 0 ? (
                 <div className="text-center py-8">
                   <Calendar size={48} className="mx-auto text-gray-300 mb-4" />
@@ -351,16 +367,12 @@ export const EntrepreneurDashboard: React.FC = () => {
                         </div>
                         {meeting.status === 'pending' && (
                           <div className="flex flex-col gap-2 ml-3">
-                            <button
-                              onClick={() => handleAccept(meeting._id)}
-                              className="flex items-center px-2 py-1 text-xs text-green-600 border border-green-600 rounded-md hover:bg-green-50"
-                            >
+                            <button onClick={() => handleAcceptMeeting(meeting._id)}
+                              className="flex items-center px-2 py-1 text-xs text-green-600 border border-green-600 rounded-md hover:bg-green-50">
                               <Check size={12} className="mr-1" /> Accept
                             </button>
-                            <button
-                              onClick={() => handleReject(meeting._id)}
-                              className="flex items-center px-2 py-1 text-xs text-red-600 border border-red-600 rounded-md hover:bg-red-50"
-                            >
+                            <button onClick={() => handleRejectMeeting(meeting._id)}
+                              className="flex items-center px-2 py-1 text-xs text-red-600 border border-red-600 rounded-md hover:bg-red-50">
                               <X size={12} className="mr-1" /> Reject
                             </button>
                           </div>
@@ -372,7 +384,6 @@ export const EntrepreneurDashboard: React.FC = () => {
               )}
             </CardBody>
           </Card>
-
         </div>
 
         {/* Recommended Investors */}

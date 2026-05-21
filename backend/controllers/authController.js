@@ -49,16 +49,17 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // --- 2FA: generate and "send" OTP instead of logging in directly ---
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = otp;
+    user.otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    await user.save();
 
-    res.json({
-      token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role }
-    });
+    console.log('========================================');
+    console.log(`OTP for ${user.email}: ${otp}`);
+    console.log('========================================');
+
+    return res.json({ require2FA: true, userId: user._id });
 
   } catch (err) {
     console.log('LOGIN ERROR:', err);
@@ -66,6 +67,7 @@ exports.login = async (req, res) => {
   }
 };
 
+    
 exports.getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
@@ -87,6 +89,38 @@ exports.updateProfile = async (req, res) => {
 
     res.json(user);
   } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+exports.verifyOTP = async (req, res) => {
+  try {
+    const { userId, otp } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid request' });
+    }
+    if (user.otp !== otp || !user.otpExpires || user.otpExpires < new Date()) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      token,
+      user: { id: user._id, name: user.name, email: user.email, role: user.role }
+    });
+
+  } catch (err) {
+    console.log('VERIFY OTP ERROR:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };

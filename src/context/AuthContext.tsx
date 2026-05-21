@@ -13,14 +13,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check for stored user on initial load
   useEffect(() => {
-    const storedUser = localStorage.getItem(USER_STORAGE_KEY);
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
-  }, []);
+  const storedUser = localStorage.getItem(USER_STORAGE_KEY);
+  if (storedUser) {
+    setUser(JSON.parse(storedUser));
+  }
+  setIsLoading(false);
+}, []);
 
   // Real login function
   const login = async (email: string, password: string, role: UserRole): Promise<void> => {
@@ -85,6 +84,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     }
   };
+  // Login using an already-obtained token (used after 2FA OTP verification)
+  const loginWithToken = (token: string, userData: any): void => {
+    const loggedInUser: User = {
+      id: userData.id,
+      name: userData.name,
+      email: userData.email,
+      role: userData.role,
+      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=random`,
+      bio: '',
+      isOnline: true,
+      createdAt: new Date().toISOString()
+    };
+    setUser(loggedInUser);
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(loggedInUser));
+    localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    toast.success('Successfully logged in!');
+  };
 
   // Forgot password (mock for now)
   const forgotPassword = async (email: string): Promise<void> => {
@@ -137,6 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = {
     user,
     login,
+    loginWithToken,
     register,
     logout,
     forgotPassword,
@@ -145,7 +162,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAuthenticated: !!user,
     isLoading
   };
-
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 

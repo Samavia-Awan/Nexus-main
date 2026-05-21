@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Auth API calls
 export const authAPI = {
@@ -13,6 +13,14 @@ export const authAPI = {
 
   login: async (data: { email: string; password: string }) => {
     const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+  verifyOTP: async (data: { userId: string; otp: string }) => {
+    const response = await fetch(`${API_URL}/auth/verify-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),

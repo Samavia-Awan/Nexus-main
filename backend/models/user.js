@@ -10,6 +10,9 @@ const userSchema = new mongoose.Schema({
   startupHistory: { type: String, default: '' },
   investmentHistory: { type: String, default: '' },
   preferences: { type: String, default: '' },
+  twoFactorEnabled: { type: Boolean, default: true },
+  otp: String,
+  otpExpires: Date,
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

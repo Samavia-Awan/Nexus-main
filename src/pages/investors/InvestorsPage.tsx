@@ -13,7 +13,29 @@ export const InvestorsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const token = localStorage.getItem('business_nexus_token') || '';
-
+// Add this function at the top of InvestorsPage component:
+const sendCollaborationRequest = async (entrepreneurId: string) => {
+  const message = prompt('Enter your message to this entrepreneur:');
+  if (!message) return;
+  try {
+    const res = await fetch('http://localhost:5000/api/collaboration', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('business_nexus_token')}`
+      },
+      body: JSON.stringify({ entrepreneurId, message })
+    });
+    const data = await res.json();
+    if (data._id) {
+      alert('Collaboration request sent!');
+    } else {
+      alert('Error: ' + (data.message || 'Failed'));
+    }
+  } catch (err) {
+    alert('Failed to send request');
+  }
+};
   useEffect(() => {
     fetchInvestors();
   }, []);
