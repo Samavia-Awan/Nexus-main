@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://lucky-icons-love.loca.lt/api';
 
 // Auth API calls
 export const authAPI = {
