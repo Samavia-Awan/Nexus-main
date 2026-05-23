@@ -1,6 +1,6 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://new-rivers-clap.loca.lt/api';
+// Auth API calls';
 
-// Auth API calls
 export const authAPI = {
   register: async (data: { name: string; email: string; password: string; role: string }) => {
     const response = await fetch(`${API_URL}/auth/register`, {
